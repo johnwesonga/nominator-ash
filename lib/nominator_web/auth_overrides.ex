@@ -17,4 +17,14 @@ defmodule NominatorWeb.AuthOverrides do
   # override AshAuthentication.Phoenix.Components.SignIn do
   #  set :show_banner, false
   # end
+
+  override AshAuthentication.Phoenix.Components.Banner do
+    set :image_url, "/images/nominator.png"
+    set :dark_image_url, "/images/nominator.png"
+    set :href_url, "/"
+    # set :text, "Most Inspirational Swimmer"
+    set :image_class, "mx-auto h-16 w-auto"
+    set :dark_image_class, "mx-auto hidden h-16 w-auto dark:block"
+    set :text_class, "mt-3 text-center text-sm text-[#5A7684]"
+  end
 end

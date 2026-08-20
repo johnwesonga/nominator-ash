@@ -61,7 +61,7 @@ defmodule NominatorWeb.AdminAuthenticationTest do
     %{conn: conn} = register_and_log_in_admin(context)
 
     conn = delete(conn, ~p"/sign-out")
-    assert redirected_to(conn) == "/"
+    assert redirected_to(conn) == "/sign-in"
 
     conn = recycle(conn)
     assert {:error, {:redirect, %{to: "/sign-in"}}} = live(conn, ~p"/admin")
