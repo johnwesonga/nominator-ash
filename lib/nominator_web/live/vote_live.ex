@@ -28,6 +28,7 @@ defmodule NominatorWeb.VoteLive do
 
       {:ok,
        socket
+       |> assign(:family_token, family_token)
        |> assign(:voting_open, settings && settings.is_open in [true, 1])
        |> assign(:ballot_forms, ballot_forms)
        |> assign(:candidate_options, candidate_options)
@@ -84,6 +85,7 @@ defmodule NominatorWeb.VoteLive do
               <.form
                 for={@ballot_forms[entry.swimmer_id]}
                 id={"vote-form-#{entry.swimmer_id}"}
+                phx-submit="submit_vote"
                 phx-hook="CandidateAutocomplete"
                 phx-update="ignore"
                 data-candidates={@candidate_options}
@@ -97,6 +99,12 @@ defmodule NominatorWeb.VoteLive do
                     disabled={!@voting_open}
                     autocomplete="off"
                     data-role="candidate-search"
+                  />
+                  <input
+                    id={"voter-id-#{entry.swimmer_id}"}
+                    name="ballot[voter_id]"
+                    type="hidden"
+                    value={entry.swimmer_id}
                   />
                   <input
                     id={"candidate-id-#{entry.swimmer_id}"}
@@ -115,8 +123,9 @@ defmodule NominatorWeb.VoteLive do
                     <% end %>
                   </span>
                   <button
+                    id={"submit-vote-#{entry.swimmer_id}"}
                     class="btn btn-primary"
-                    type="button"
+                    type="submit"
                     data-role="submit-vote"
                     disabled
                   >
@@ -130,5 +139,67 @@ defmodule NominatorWeb.VoteLive do
       </div>
     </Layouts.app>
     """
+  end
+
+  def handle_event(
+        "submit_vote",
+        %{"ballot" => %{"voter_id" => voter_id, "candidate_id" => candidate_id}},
+        socket
+      ) do
+    with true <- voting_open?(),
+         {:ok, ballot} <-
+           Nominator.Voting.Ballots.get_by_family_token(socket.assigns.family_token),
+         %{has_voted: false} = entry <- Enum.find(ballot, &(&1.swimmer_id == voter_id)),
+         {:ok, candidate} <- Nominator.Admin.get_swimmer_by_id(candidate_id),
+         {:ok, _vote} <-
+           Nominator.Voting.create_vote(%{voter_id: voter_id, candidate_id: candidate_id}) do
+      updated_entry =
+        entry
+        |> Map.put(:has_voted, true)
+        |> Map.put(:voted_for_name, candidate.name)
+
+      {:noreply,
+       socket
+       |> put_flash(:info, "Vote submitted for #{candidate.name}.")
+       |> stream_insert(:ballot, updated_entry)}
+    else
+      false ->
+        {:noreply, put_flash(socket, :error, "Voting is currently closed.")}
+
+      nil ->
+        {:noreply, put_flash(socket, :error, "That swimmer is not on this family ballot.")}
+
+      %{has_voted: true} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "That vote has already been submitted.")
+         |> refresh_ballot()}
+
+      {:error, _error} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "We couldn't submit that vote. Please try again.")
+         |> refresh_ballot()}
+    end
+  end
+
+  def handle_event("submit_vote", _params, socket) do
+    {:noreply, put_flash(socket, :error, "Choose a swimmer before submitting your vote.")}
+  end
+
+  defp voting_open? do
+    Nominator.Voting.list_voting_settings!()
+    |> List.first()
+    |> case do
+      %{is_open: is_open} when is_open in [true, 1] -> true
+      _ -> false
+    end
+  end
+
+  defp refresh_ballot(socket) do
+    case Nominator.Voting.Ballots.get_by_family_token(socket.assigns.family_token) do
+      {:ok, ballot} -> stream(socket, :ballot, ballot, reset: true)
+      _error -> socket
+    end
   end
 end
