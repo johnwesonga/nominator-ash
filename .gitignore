@@ -35,3 +35,6 @@ nominator-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# Local AshSqlite databases and sidecar files.
+/nominator_dev*
+/nominator_test*

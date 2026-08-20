@@ -18,6 +18,8 @@ defmodule NominatorWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/admin", AdminLive
+    live "/vote/:id", VoteLive
   end
 
   # Other scopes may use custom stacks.

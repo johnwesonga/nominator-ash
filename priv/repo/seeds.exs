@@ -9,3 +9,8 @@
 #
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
+
+case Nominator.Voting.list_voting_settings!() do
+  [] -> Nominator.Voting.create_voting_settings!(%{is_open: 1})
+  _settings -> :ok
+end

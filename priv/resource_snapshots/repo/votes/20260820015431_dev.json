@@ -1,0 +1,108 @@
+{
+  "attributes": [
+    {
+      "default": "nil",
+      "size": null,
+      "type": "uuid",
+      "source": "id",
+      "references": null,
+      "allow_nil?": false,
+      "primary_key?": true,
+      "generated?": false
+    },
+    {
+      "default": "nil",
+      "size": null,
+      "type": "utc_datetime_usec",
+      "source": "inserted_at",
+      "references": null,
+      "allow_nil?": false,
+      "primary_key?": false,
+      "generated?": false
+    },
+    {
+      "default": "nil",
+      "size": null,
+      "type": "utc_datetime_usec",
+      "source": "updated_at",
+      "references": null,
+      "allow_nil?": false,
+      "primary_key?": false,
+      "generated?": false
+    },
+    {
+      "default": "nil",
+      "size": null,
+      "type": "uuid",
+      "source": "voter_id",
+      "references": {
+        "name": "votes_voter_id_fkey",
+        "table": "swimmers",
+        "multitenancy": {
+          "global": null,
+          "strategy": null,
+          "attribute": null
+        },
+        "destination_attribute": "id",
+        "primary_key?": true,
+        "on_delete": null,
+        "on_update": null,
+        "deferrable": false,
+        "destination_attribute_default": null,
+        "destination_attribute_generated": null
+      },
+      "allow_nil?": false,
+      "primary_key?": false,
+      "generated?": false
+    },
+    {
+      "default": "nil",
+      "size": null,
+      "type": "uuid",
+      "source": "candidate_id",
+      "references": {
+        "name": "votes_candidate_id_fkey",
+        "table": "swimmers",
+        "multitenancy": {
+          "global": null,
+          "strategy": null,
+          "attribute": null
+        },
+        "destination_attribute": "id",
+        "primary_key?": true,
+        "on_delete": null,
+        "on_update": null,
+        "deferrable": false,
+        "destination_attribute_default": null,
+        "destination_attribute_generated": null
+      },
+      "allow_nil?": false,
+      "primary_key?": false,
+      "generated?": false
+    }
+  ],
+  "table": "votes",
+  "hash": "C54F12A98082C85C44C49669B446D4BD18FA712C9F757B01A1556119ADE8C8E6",
+  "multitenancy": {
+    "global": null,
+    "strategy": null,
+    "attribute": null
+  },
+  "identities": [
+    {
+      "name": "one_vote_per_voter",
+      "keys": [
+        "voter_id"
+      ],
+      "base_filter": null,
+      "nils_distinct?": true,
+      "index_name": "votes_one_vote_per_voter_index"
+    }
+  ],
+  "repo": "Elixir.Nominator.Repo",
+  "strict?": false,
+  "custom_indexes": [],
+  "base_filter": null,
+  "custom_statements": [],
+  "has_create_action": true
+}

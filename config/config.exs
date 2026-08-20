@@ -52,7 +52,8 @@ config :spark,
 
 config :nominator,
   ecto_repos: [Nominator.Repo],
-  generators: [timestamp_type: :utc_datetime]
+  generators: [timestamp_type: :utc_datetime],
+  ash_domains: [Nominator.Voting, Nominator.Admin]
 
 # Configures the endpoint
 config :nominator, NominatorWeb.Endpoint,

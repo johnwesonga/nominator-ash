@@ -7,6 +7,10 @@
     <.live_title default="Nominator" suffix=" · Phoenix Framework">
       {assigns[:page_title]}
     </.live_title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&amp;family=Work+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap"
+      rel="stylesheet"
+    />
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
@@ -31,6 +35,25 @@
     </script>
   </head>
   <body>
-    {@inner_content}
+    <div class="topbar">
+      <div class="topbar-inner">
+        <div class="wordmark"></div>
+        <div class="wordmark-text">
+          Forest Park Swim Team<span>Most Inspirational Swimmer - Nomination</span>
+        </div>
+      </div>
+    </div>
+    <div class="wave">
+      <svg preserveAspectRatio="none" viewBox="0 0 1200 20">
+        <path
+          d="M0,10 Q30,0 60,10 T120,10 T180,10 T240,10 T300,10 T360,10 T420,10 T480,10 T540,10 T600,10 T660,10 T720,10 T780,10 T840,10 T900,10 T960,10 T1020,10 T1080,10 T1140,10 T1200,10 V20 H0 Z"
+          fill="#F4FAFB"
+        >
+        </path>
+      </svg>
+    </div>
+    <main>
+      {@inner_content}
+    </main>
   </body>
 </html>

@@ -1,0 +1,87 @@
+{
+  "attributes": [
+    {
+      "default": "nil",
+      "size": null,
+      "type": "uuid",
+      "source": "id",
+      "references": null,
+      "allow_nil?": false,
+      "generated?": false,
+      "primary_key?": true
+    },
+    {
+      "default": "nil",
+      "size": null,
+      "type": "text",
+      "source": "email",
+      "references": null,
+      "allow_nil?": false,
+      "generated?": false,
+      "primary_key?": false
+    },
+    {
+      "default": "nil",
+      "size": null,
+      "type": "uuid",
+      "source": "family_token",
+      "references": null,
+      "allow_nil?": true,
+      "generated?": false,
+      "primary_key?": false
+    },
+    {
+      "default": "nil",
+      "size": null,
+      "type": "utc_datetime_usec",
+      "source": "inserted_at",
+      "references": null,
+      "allow_nil?": false,
+      "generated?": false,
+      "primary_key?": false
+    },
+    {
+      "default": "nil",
+      "size": null,
+      "type": "utc_datetime_usec",
+      "source": "updated_at",
+      "references": null,
+      "allow_nil?": false,
+      "generated?": false,
+      "primary_key?": false
+    }
+  ],
+  "table": "families",
+  "hash": "165CFEA767407FD346A67AB5B9DD242C622269A3D1F36B52323FC9E8566126ED",
+  "multitenancy": {
+    "global": null,
+    "attribute": null,
+    "strategy": null
+  },
+  "identities": [
+    {
+      "name": "unique_family_token",
+      "keys": [
+        "family_token"
+      ],
+      "nils_distinct?": true,
+      "index_name": "families_unique_family_token_index",
+      "base_filter": null
+    },
+    {
+      "name": "unique_name",
+      "keys": [
+        "email"
+      ],
+      "nils_distinct?": true,
+      "index_name": "families_unique_name_index",
+      "base_filter": null
+    }
+  ],
+  "repo": "Elixir.Nominator.Repo",
+  "strict?": false,
+  "base_filter": null,
+  "custom_indexes": [],
+  "custom_statements": [],
+  "has_create_action": true
+}

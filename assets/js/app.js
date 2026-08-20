@@ -25,11 +25,150 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/nominator"
 import topbar from "../vendor/topbar"
 
+const Hooks = {
+  CandidateAutocomplete: {
+    mounted() {
+      this.candidates = JSON.parse(this.el.dataset.candidates)
+      this.searchInput = this.el.querySelector('[data-role="candidate-search"]')
+      this.candidateIdInput = this.el.querySelector('[data-role="candidate-id"]')
+      this.submitButton = this.el.querySelector('[data-role="submit-vote"]')
+      this.searchWrap = this.searchInput.closest(".search-wrap")
+      this.highlightedIndex = -1
+      this.matches = []
+
+      this.onInput = () => {
+        this.candidateIdInput.value = ""
+        this.submitButton.disabled = true
+        this.renderMatches(this.searchInput.value)
+      }
+
+      this.onKeydown = event => {
+        if (this.matches.length === 0) return
+
+        if (event.key === "ArrowDown") {
+          event.preventDefault()
+          this.highlightedIndex = (this.highlightedIndex + 1) % this.matches.length
+          this.updateHighlight()
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault()
+          this.highlightedIndex =
+            (this.highlightedIndex - 1 + this.matches.length) % this.matches.length
+          this.updateHighlight()
+        } else if (event.key === "Enter" && this.highlightedIndex >= 0) {
+          event.preventDefault()
+          this.selectCandidate(this.matches[this.highlightedIndex])
+        } else if (event.key === "Escape") {
+          this.closeResults()
+        }
+      }
+
+      this.onDocumentClick = event => {
+        if (!this.el.contains(event.target)) this.closeResults()
+      }
+
+      this.searchInput.addEventListener("input", this.onInput)
+      this.searchInput.addEventListener("keydown", this.onKeydown)
+      document.addEventListener("click", this.onDocumentClick)
+    },
+
+    renderMatches(query) {
+      const normalizedQuery = query.trim().toLocaleLowerCase()
+
+      if (normalizedQuery === "") {
+        this.closeResults()
+        return
+      }
+
+      this.closeResults()
+      this.matches = this.candidates
+        .filter(candidate => candidate.name.toLocaleLowerCase().includes(normalizedQuery))
+        .slice(0, 8)
+      this.highlightedIndex = this.matches.length > 0 ? 0 : -1
+
+      if (this.matches.length === 0) return
+
+      this.results = document.createElement("div")
+      this.results.className = "autocomplete"
+
+      this.matches.forEach((candidate, index) => {
+        const option = document.createElement("button")
+        option.type = "button"
+        option.className = index === this.highlightedIndex ? "opt highlight" : "opt"
+
+        const name = document.createElement("span")
+        name.textContent = candidate.name
+
+        const group = document.createElement("span")
+        group.className = "grp"
+        group.textContent = candidate.group
+
+        option.append(name, group)
+        option.addEventListener("click", () => this.selectCandidate(candidate))
+        this.results.appendChild(option)
+      })
+
+      this.searchWrap.appendChild(this.results)
+    },
+
+    updateHighlight() {
+      this.results?.querySelectorAll(".opt").forEach((option, index) => {
+        option.classList.toggle("highlight", index === this.highlightedIndex)
+      })
+    },
+
+    selectCandidate(candidate) {
+      this.searchInput.value = candidate.name
+      this.candidateIdInput.value = candidate.id
+      this.submitButton.disabled = this.el.dataset.votingOpen !== "true"
+      this.closeResults()
+    },
+
+    closeResults() {
+      this.results?.remove()
+      this.results = null
+      this.matches = []
+      this.highlightedIndex = -1
+    },
+
+    destroyed() {
+      this.searchInput.removeEventListener("input", this.onInput)
+      this.searchInput.removeEventListener("keydown", this.onKeydown)
+      document.removeEventListener("click", this.onDocumentClick)
+    },
+  },
+
+  CopyVoteLink: {
+    mounted() {
+      this.copyVoteLink = async () => {
+        const voteUrl = new URL(this.el.dataset.votePath, window.location.origin).href
+        const originalLabel = this.el.textContent
+
+        try {
+          await navigator.clipboard.writeText(voteUrl)
+          this.el.textContent = "Copied!"
+        } catch (_error) {
+          this.el.textContent = "Copy failed"
+        }
+
+        window.setTimeout(() => {
+          this.el.textContent = originalLabel
+        }, 1500)
+      }
+
+      this.el.addEventListener("click", this.copyVoteLink)
+    },
+
+    destroyed() {
+      this.el.removeEventListener("click", this.copyVoteLink)
+    },
+  },
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: {...colocatedHooks, ...Hooks},
 })
 
 // Show progress bar on live navigation and form submits
@@ -80,4 +219,3 @@ if (process.env.NODE_ENV === "development") {
     window.liveReloader = reloader
   })
 }
-
