@@ -208,4 +208,27 @@ defmodule NominatorWeb.AdminLiveTest do
     assert has_element?(view, "#result-#{candidate_one.id}[data-rank='1']")
     assert has_element?(view, "#result-#{candidate_two.id}[data-rank='1']")
   end
+
+  test "closes and reopens voting", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+
+    assert has_element?(view, "#voting-status", "Voting open")
+    assert has_element?(view, "#reopen-voting[disabled]")
+
+    view |> element("#close-voting") |> render_click()
+
+    [closed_settings] = Nominator.Voting.list_voting_settings!()
+    assert closed_settings.is_open == 0
+    assert closed_settings.closed_at
+    assert has_element?(view, "#voting-status.closed", "Voting closed")
+    assert has_element?(view, "#close-voting[disabled]")
+
+    view |> element("#reopen-voting") |> render_click()
+
+    [open_settings] = Nominator.Voting.list_voting_settings!()
+    assert open_settings.is_open == 1
+    assert is_nil(open_settings.closed_at)
+    assert has_element?(view, "#voting-status:not(.closed)", "Voting open")
+    assert has_element?(view, "#reopen-voting[disabled]")
+  end
 end

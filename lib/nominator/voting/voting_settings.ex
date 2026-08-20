@@ -10,7 +10,7 @@ defmodule Nominator.Voting.VotingSettings do
   end
 
   actions do
-    defaults [:read, create: [:is_open, :closed_at]]
+    defaults [:read, create: [:is_open, :closed_at], update: [:is_open, :closed_at]]
   end
 
   attributes do

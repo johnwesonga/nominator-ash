@@ -32,6 +32,7 @@ const Hooks = {
       this.searchInput = this.el.querySelector('[data-role="candidate-search"]')
       this.candidateIdInput = this.el.querySelector('[data-role="candidate-id"]')
       this.submitButton = this.el.querySelector('[data-role="submit-vote"]')
+      this.votingHint = this.el.querySelector('[data-role="voting-hint"]')
       this.searchWrap = this.searchInput.closest(".search-wrap")
       this.highlightedIndex = -1
       this.matches = []
@@ -69,6 +70,17 @@ const Hooks = {
       this.searchInput.addEventListener("input", this.onInput)
       this.searchInput.addEventListener("keydown", this.onKeydown)
       document.addEventListener("click", this.onDocumentClick)
+
+      this.votingStatusRef = this.handleEvent("voting-status-changed", ({open}) => {
+        this.el.dataset.votingOpen = String(open)
+        this.searchInput.disabled = !open
+        this.submitButton.disabled = !open || this.candidateIdInput.value === ""
+        this.votingHint.textContent = open
+          ? "Start typing a teammate's name to search the roster."
+          : "Voting is currently closed."
+
+        if (!open) this.closeResults()
+      })
     },
 
     renderMatches(query) {
@@ -134,6 +146,7 @@ const Hooks = {
       this.searchInput.removeEventListener("input", this.onInput)
       this.searchInput.removeEventListener("keydown", this.onKeydown)
       document.removeEventListener("click", this.onDocumentClick)
+      this.removeHandleEvent(this.votingStatusRef)
     },
   },
 

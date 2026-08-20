@@ -668,6 +668,15 @@
       background: var(--success);
   }
 
+  .status-badge.closed {
+      background: #FDECEA;
+      color: var(--lane-red);
+  }
+
+  .status-badge.closed .dot {
+      background: var(--lane-red);
+  }
+
   .controls {
       display: flex;
       gap: 10px;

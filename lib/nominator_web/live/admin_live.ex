@@ -17,6 +17,8 @@ defmodule NominatorWeb.AdminLive do
       |> Ash.load!(:swimmers, domain: Nominator.Admin)
 
     results = Nominator.Voting.Results.list()
+    voting_settings = Nominator.Voting.list_voting_settings!() |> List.first()
+    voting_open = voting_settings && voting_settings.is_open in [true, 1]
 
     family_forms =
       Map.new(families, fn family ->
@@ -50,6 +52,8 @@ defmodule NominatorWeb.AdminLive do
      |> assign(:swimmer_count, length(swimmers))
      |> assign(:families_count, length(families))
      |> assign(:roster_count, length(swimmers))
+     |> assign(:voting_settings, voting_settings)
+     |> assign(:voting_open, voting_open)
      |> assign(:results_empty?, results == [])
      |> assign(:total_votes, Enum.sum(Enum.map(results, & &1.vote_count)))
      |> assign(
@@ -75,11 +79,31 @@ defmodule NominatorWeb.AdminLive do
             <h1>Admin Dashboard</h1>
             <div class="sub">Season 2026 · Most Inspirational Swimmer</div>
           </div>
-          <span class="status-badge"><span class="dot"></span>Voting open</span>
+          <span id="voting-status" class={["status-badge", !@voting_open && "closed"]}>
+            <span class="dot"></span>{if @voting_open, do: "Voting open", else: "Voting closed"}
+          </span>
         </div>
         <div class="controls">
-          <button class="btn btn-ghost">Close voting</button>
-          <button class="btn btn-ghost">Reopen voting</button>
+          <button
+            id="close-voting"
+            class="btn btn-ghost"
+            type="button"
+            phx-click="set_voting_status"
+            phx-value-open="false"
+            disabled={!@voting_open}
+          >
+            Close voting
+          </button>
+          <button
+            id="reopen-voting"
+            class="btn btn-ghost"
+            type="button"
+            phx-click="set_voting_status"
+            phx-value-open="true"
+            disabled={@voting_open}
+          >
+            Reopen voting
+          </button>
           <button class="btn btn-primary">Email all parents their voting link</button>
         </div>
         <section id="results-panel" class="panel">
@@ -475,6 +499,36 @@ defmodule NominatorWeb.AdminLive do
 
       {:error, _error} ->
         {:noreply, put_flash(socket, :error, "Could not add family.")}
+    end
+  end
+
+  def handle_event("set_voting_status", %{"open" => open}, socket) do
+    voting_open = open == "true"
+
+    params = %{
+      is_open: if(voting_open, do: 1, else: 0),
+      closed_at: if(voting_open, do: nil, else: DateTime.utc_now())
+    }
+
+    case Nominator.Voting.update_voting_settings(socket.assigns.voting_settings, params) do
+      {:ok, voting_settings} ->
+        Phoenix.PubSub.broadcast(
+          Nominator.PubSub,
+          "voting_settings",
+          {:voting_status_changed, voting_open}
+        )
+
+        {:noreply,
+         socket
+         |> assign(:voting_settings, voting_settings)
+         |> assign(:voting_open, voting_open)
+         |> put_flash(
+           :info,
+           if(voting_open, do: "Voting reopened.", else: "Voting closed.")
+         )}
+
+      {:error, _error} ->
+        {:noreply, put_flash(socket, :error, "Could not update the voting status.")}
     end
   end
 

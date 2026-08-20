@@ -17,6 +17,10 @@ defmodule NominatorWeb.VoteLive do
         Nominator.Voting.list_voting_settings!()
         |> List.first()
 
+      if connected?(socket) do
+        Phoenix.PubSub.subscribe(Nominator.PubSub, "voting_settings")
+      end
+
       ballot_forms =
         Map.new(ballot, fn entry ->
           {entry.swimmer_id,
@@ -115,7 +119,7 @@ defmodule NominatorWeb.VoteLive do
                   />
                 </div>
                 <div class="lane-foot">
-                  <span class="hint">
+                  <span class="hint" data-role="voting-hint">
                     <%= if @voting_open do %>
                       Start typing a teammate's name to search the roster.
                     <% else %>
@@ -187,6 +191,13 @@ defmodule NominatorWeb.VoteLive do
 
   def handle_event("submit_vote", _params, socket) do
     {:noreply, put_flash(socket, :error, "Choose a swimmer before submitting your vote.")}
+  end
+
+  def handle_info({:voting_status_changed, voting_open}, socket) do
+    {:noreply,
+     socket
+     |> assign(:voting_open, voting_open)
+     |> push_event("voting-status-changed", %{open: voting_open})}
   end
 
   defp voting_open? do

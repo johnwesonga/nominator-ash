@@ -11,6 +11,7 @@ defmodule Nominator.Voting do
     resource Nominator.Voting.VotingSettings do
       define :list_voting_settings, action: :read
       define :create_voting_settings, action: :create
+      define :update_voting_settings, action: :update
     end
   end
 end
