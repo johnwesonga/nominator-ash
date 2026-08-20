@@ -4,6 +4,10 @@ defmodule NominatorWeb.AdminLive do
   require Ash.Query
 
   def mount(_params, _session, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Nominator.PubSub, "votes")
+    end
+
     swimmers =
       Nominator.Admin.list_swimmers!()
       |> Ash.load!([:family, cast_vote: :candidate], domain: Nominator.Admin)
@@ -11,6 +15,8 @@ defmodule NominatorWeb.AdminLive do
     families =
       Nominator.Admin.list_families!()
       |> Ash.load!(:swimmers, domain: Nominator.Admin)
+
+    results = Nominator.Voting.Results.list()
 
     family_forms =
       Map.new(families, fn family ->
@@ -44,13 +50,20 @@ defmodule NominatorWeb.AdminLive do
      |> assign(:swimmer_count, length(swimmers))
      |> assign(:families_count, length(families))
      |> assign(:roster_count, length(swimmers))
+     |> assign(:results_empty?, results == [])
+     |> assign(:total_votes, Enum.sum(Enum.map(results, & &1.vote_count)))
+     |> assign(
+       :max_result_votes,
+       results |> List.first() |> then(&if(&1, do: &1.vote_count, else: 0))
+     )
      |> assign(:family_form, to_form(%{"email" => ""}, as: :family))
      |> assign(:search_form, to_form(%{"query" => ""}, as: :search))
      |> assign(:family_forms, family_forms)
      |> assign(:swimmer_forms, swimmer_forms)
      |> assign(:swimmer_edit_forms, swimmer_edit_forms)
      |> stream(:families, families)
-     |> stream(:swimmers, swimmers)}
+     |> stream(:swimmers, swimmers)
+     |> stream(:results, results, dom_id: fn result -> "result-#{result.id}" end)}
   end
 
   def render(assigns) do
@@ -69,29 +82,36 @@ defmodule NominatorWeb.AdminLive do
           <button class="btn btn-ghost">Reopen voting</button>
           <button class="btn btn-primary">Email all parents their voting link</button>
         </div>
-        <section class="panel">
-          <h3>Results</h3>
-          <div>
-            <div class="leaderboard-row top">
-              <span class="rank">1</span><span class="cand-name">Grace Example</span>
-              <div class="bar-track">
-                <div class="bar-fill" style="width:100%;"></div>
+        <section id="results-panel" class="panel">
+          <h3>
+            Results · <span id="total-votes">{@total_votes}</span>
+            {if @total_votes == 1, do: "vote", else: "votes"}
+          </h3>
+          <div :if={@results_empty?} id="empty-results">
+            No votes have been submitted yet.
+          </div>
+          <div id="leaderboard" phx-update="stream">
+            <div
+              :for={{id, result} <- @streams.results}
+              id={id}
+              class={["leaderboard-row", result.rank == 1 && "top"]}
+              data-rank={result.rank}
+            >
+              <span class="rank">{result.rank}</span>
+              <span class="cand-name">{result.candidate_name}</span>
+              <div
+                class="bar-track"
+                role="progressbar"
+                aria-label={"#{result.candidate_name}: #{result.vote_count} votes"}
+                aria-valuenow={result.vote_count}
+                aria-valuemin="0"
+                aria-valuemax={@max_result_votes}
+              >
+                <div class="bar-fill" style={"width:#{result.percentage}%;"}></div>
               </div>
-              <span class="vote-count">1</span>
-            </div>
-            <div class="leaderboard-row">
-              <span class="rank">2</span><span class="cand-name">Jane Smith</span>
-              <div class="bar-track">
-                <div class="bar-fill" style="width:100%;"></div>
-              </div>
-              <span class="vote-count">1</span>
-            </div>
-            <div class="leaderboard-row">
-              <span class="rank">3</span><span class="cand-name">Lin Example</span>
-              <div class="bar-track">
-                <div class="bar-fill" style="width:100%;"></div>
-              </div>
-              <span class="vote-count">1</span>
+              <span id={"result-vote-count-#{result.id}"} class="vote-count">
+                {result.vote_count}
+              </span>
             </div>
           </div>
         </section>
@@ -553,11 +573,29 @@ defmodule NominatorWeb.AdminLive do
        )
        |> stream_insert(:families, family)
        |> stream_insert(:swimmers, swimmer)
+       |> refresh_results()
        |> put_flash(:info, "Swimmer updated successfully.")}
     else
       {:error, _error} ->
         {:noreply, put_flash(socket, :error, "Could not update swimmer.")}
     end
+  end
+
+  def handle_info(:vote_recorded, socket) do
+    {:noreply, refresh_results(socket)}
+  end
+
+  defp refresh_results(socket) do
+    results = Nominator.Voting.Results.list()
+
+    socket
+    |> assign(:results_empty?, results == [])
+    |> assign(:total_votes, Enum.sum(Enum.map(results, & &1.vote_count)))
+    |> assign(
+      :max_result_votes,
+      results |> List.first() |> then(&if(&1, do: &1.vote_count, else: 0))
+    )
+    |> stream(:results, results, reset: true)
   end
 
   defp search_roster(search) do

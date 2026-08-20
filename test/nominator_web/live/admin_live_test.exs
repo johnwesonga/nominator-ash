@@ -143,4 +143,69 @@ defmodule NominatorWeb.AdminLiveTest do
     assert has_element?(view, "#swimmers #swimmers-#{matching.id}")
     refute has_element?(view, "#swimmers #swimmers-#{other.id}")
   end
+
+  test "renders an empty results state", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+
+    assert has_element?(view, "#results-panel")
+    assert has_element?(view, "#empty-results")
+    assert has_element?(view, "#total-votes", "0")
+  end
+
+  test "tallies and ranks persisted votes", %{conn: conn} do
+    family = Nominator.Admin.create_family!(%{email: "results@example.com"})
+
+    candidate_one =
+      Nominator.Admin.create_swimmer!(%{name: "Alpha Candidate", family_id: family.id})
+
+    candidate_two =
+      Nominator.Admin.create_swimmer!(%{name: "Beta Candidate", family_id: family.id})
+
+    zero_vote_candidate =
+      Nominator.Admin.create_swimmer!(%{name: "No Votes", family_id: family.id})
+
+    voter_one =
+      Nominator.Admin.create_swimmer!(%{name: "First Voter", family_id: family.id})
+
+    voter_two =
+      Nominator.Admin.create_swimmer!(%{name: "Second Voter", family_id: family.id})
+
+    voter_three =
+      Nominator.Admin.create_swimmer!(%{name: "Third Voter", family_id: family.id})
+
+    Nominator.Voting.create_vote!(%{voter_id: voter_one.id, candidate_id: candidate_one.id})
+    Nominator.Voting.create_vote!(%{voter_id: voter_two.id, candidate_id: candidate_one.id})
+    Nominator.Voting.create_vote!(%{voter_id: voter_three.id, candidate_id: candidate_two.id})
+
+    {:ok, view, _html} = live(conn, ~p"/admin")
+
+    assert has_element?(view, "#total-votes", "3")
+    refute has_element?(view, "#empty-results")
+    assert has_element?(view, "#result-#{candidate_one.id}[data-rank='1']")
+    assert has_element?(view, "#result-vote-count-#{candidate_one.id}", "2")
+    assert has_element?(view, "#result-#{candidate_two.id}[data-rank='2']")
+    assert has_element?(view, "#result-vote-count-#{candidate_two.id}", "1")
+    refute has_element?(view, "#result-#{zero_vote_candidate.id}")
+  end
+
+  test "gives tied candidates the same rank", %{conn: conn} do
+    family = Nominator.Admin.create_family!(%{email: "ties@example.com"})
+
+    candidate_one =
+      Nominator.Admin.create_swimmer!(%{name: "First Candidate", family_id: family.id})
+
+    candidate_two =
+      Nominator.Admin.create_swimmer!(%{name: "Second Candidate", family_id: family.id})
+
+    voter_one = Nominator.Admin.create_swimmer!(%{name: "Voter One", family_id: family.id})
+    voter_two = Nominator.Admin.create_swimmer!(%{name: "Voter Two", family_id: family.id})
+
+    Nominator.Voting.create_vote!(%{voter_id: voter_one.id, candidate_id: candidate_one.id})
+    Nominator.Voting.create_vote!(%{voter_id: voter_two.id, candidate_id: candidate_two.id})
+
+    {:ok, view, _html} = live(conn, ~p"/admin")
+
+    assert has_element?(view, "#result-#{candidate_one.id}[data-rank='1']")
+    assert has_element?(view, "#result-#{candidate_two.id}[data-rank='1']")
+  end
 end

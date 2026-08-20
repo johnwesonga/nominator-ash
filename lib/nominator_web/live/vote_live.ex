@@ -153,6 +153,8 @@ defmodule NominatorWeb.VoteLive do
          {:ok, candidate} <- Nominator.Admin.get_swimmer_by_id(candidate_id),
          {:ok, _vote} <-
            Nominator.Voting.create_vote(%{voter_id: voter_id, candidate_id: candidate_id}) do
+      Phoenix.PubSub.broadcast(Nominator.PubSub, "votes", :vote_recorded)
+
       updated_entry =
         entry
         |> Map.put(:has_voted, true)
