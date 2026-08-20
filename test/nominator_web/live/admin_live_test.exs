@@ -3,6 +3,8 @@ defmodule NominatorWeb.AdminLiveTest do
 
   import Phoenix.LiveViewTest
 
+  setup :register_and_log_in_admin
+
   test "renders the swimmer roster", %{conn: conn} do
     family = Nominator.Admin.create_family!(%{email: "family@example.com"})
 

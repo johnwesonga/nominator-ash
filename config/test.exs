@@ -1,4 +1,6 @@
 import Config
+config :nominator, token_signing_secret: "WQowYk0QxYY0528+L07HTlFY9+l6QIYm"
+config :bcrypt_elixir, log_rounds: 1
 config :ash, policies: [show_policy_breakdowns?: true], disable_async?: true
 
 # Configure your database

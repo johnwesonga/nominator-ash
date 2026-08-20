@@ -31,6 +31,8 @@ defmodule NominatorWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
 
+  attr :current_admin, :map, default: nil, doc: "the signed-in administrator"
+
   slot :inner_block, required: true
 
   def app(assigns) do
@@ -44,7 +46,15 @@ defmodule NominatorWeb.Layouts do
           </span>
         </.link>
 
-        <.theme_toggle />
+        <div class="flex items-center gap-3">
+          <%= if @current_admin do %>
+            <span id="current-admin-email" class="text-sm">{@current_admin.email}</span>
+            <.link id="admin-sign-out" href={~p"/sign-out"} class="btn btn-ghost btn-sm">
+              Sign out
+            </.link>
+          <% end %>
+          <.theme_toggle />
+        </div>
       </div>
     </header>
 

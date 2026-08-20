@@ -35,4 +35,39 @@ defmodule NominatorWeb.ConnCase do
     Nominator.DataCase.setup_sandbox(tags)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
+
+  def register_and_log_in_admin(%{conn: conn} = context) do
+    {seeded_admin, password} = create_admin()
+
+    strategy = AshAuthentication.Info.strategy!(Nominator.Accounts.Admin, :password)
+
+    {:ok, admin} =
+      AshAuthentication.Strategy.action(strategy, :sign_in, %{
+        email: seeded_admin.email,
+        password: password
+      })
+
+    conn =
+      conn
+      |> Phoenix.ConnTest.init_test_session(%{})
+      |> AshAuthentication.Plug.Helpers.store_in_session(admin)
+
+    context
+    |> Map.put(:admin, admin)
+    |> Map.put(:conn, conn)
+  end
+
+  def create_admin do
+    email = "admin-#{System.unique_integer([:positive])}@example.com"
+    password = "valid admin password"
+    {:ok, hashed_password} = AshAuthentication.BcryptProvider.hash(password)
+
+    admin =
+      Ash.Seed.seed!(Nominator.Accounts.Admin, %{
+        email: email,
+        hashed_password: hashed_password
+      })
+
+    {admin, password}
+  end
 end

@@ -15,7 +15,8 @@ defmodule Nominator.Application do
       # Start a worker by calling: Nominator.Worker.start_link(arg)
       # {Nominator.Worker, arg},
       # Start to serve requests, typically the last entry
-      NominatorWeb.Endpoint
+      NominatorWeb.Endpoint,
+      {AshAuthentication.Supervisor, [otp_app: :nominator]}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

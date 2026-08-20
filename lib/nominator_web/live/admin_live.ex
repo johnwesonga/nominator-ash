@@ -55,7 +55,7 @@ defmodule NominatorWeb.AdminLive do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
+    <Layouts.app flash={@flash} current_admin={@current_admin}>
       <div id="view-admin" class="view active">
         <div class="admin-head">
           <div>

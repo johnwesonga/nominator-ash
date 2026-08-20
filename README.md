@@ -57,13 +57,29 @@ will be available at [http://localhost:4000](http://localhost:4000).
 
 To try the voting flow locally:
 
-1. Visit `/admin` and add a family.
-2. Add one or more swimmers to that family.
-3. Expand the family and copy its private voting link.
-4. Open the link and submit one nomination for each swimmer.
+1. Create the first administrator as described below.
+2. Sign in at `/sign-in`, then visit `/admin` and add a family.
+3. Add one or more swimmers to that family.
+4. Expand the family and copy its private voting link.
+5. Open the link and submit one nomination for each swimmer.
 
 Treat family ballot links as private: possession of the token grants access to
 that family's ballot.
+
+## Administrator access
+
+Public administrator registration is disabled. Create an administrator from
+environment variables after setting up the database:
+
+```sh
+ADMIN_EMAIL=admin@example.com \
+ADMIN_PASSWORD='replace with a strong password' \
+mix nominator.admin.create
+```
+
+The command does not print the password and refuses duplicate email addresses.
+Administrators sign in at `/sign-in` and can reset their password through the
+local email preview at `/dev/mailbox` during development.
 
 ## Database tasks
 
@@ -92,10 +108,13 @@ mix precommit
 
 ## Current status
 
-Nominator is under active development. The admin route is not authenticated,
-the landing page is still the default Phoenix page, and the admin voting-window,
-results, deletion, and email controls are not yet fully wired. Do not expose the
-application publicly until authentication and authorization are added.
+Nominator is under active development. The admin route requires an authenticated
+administrator, but the landing page is still the default Phoenix page and the
+admin voting-window, results, deletion, and bulk-email controls are not yet fully
+wired.
+
+The reviewed implementation plan and completion checklist are in
+[docs/admin-authentication.md](docs/admin-authentication.md).
 
 ## Production
 
@@ -103,6 +122,7 @@ Production startup expects at least these environment variables:
 
 - `DATABASE_URL`
 - `SECRET_KEY_BASE` (generate one with `mix phx.gen.secret`)
+- `TOKEN_SIGNING_SECRET` (use a separate, cryptographically random secret)
 - `PHX_HOST`
 - `PHX_SERVER=true` when starting an Elixir release directly
 
